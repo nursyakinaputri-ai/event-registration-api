@@ -1,20 +1,37 @@
-
+from app.database import get_connection
 from app.models.event import Event
 
 
 class EventRepository:
-    def __init__(self):
-        self._events: list[dict] = []
-        self._next_id = 1
-
     def create(self, event: Event) -> dict:
-        event_data = event.model_dump()
-        event_data["id"] = self._next_id
+        with get_connection() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO events (name, description, location, date, capacity)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    event.name,
+                    event.description,
+                    event.location,
+                    event.date,
+                    event.capacity,
+                ),
+            )
 
-        self._events.append(event_data)
-        self._next_id += 1
+            event_id = cursor.lastrowid
 
-        return event_data
+            row = connection.execute(
+                "SELECT * FROM events WHERE id = ?",
+                (event_id,),
+            ).fetchone()
+
+            return dict(row)
 
     def get_all(self) -> list[dict]:
-        return self._events.copy()
+        with get_connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM events ORDER BY id"
+            ).fetchall()
+
+            return [dict(row) for row in rows]

@@ -1,4 +1,7 @@
 
+import os
+import tempfile
+
 import pytest
 
 from app.models.event import Event
@@ -10,6 +13,19 @@ from app.services.event_service import EventService
 from app.services.participant_service import ParticipantService
 from app.services.registration_service import RegistrationService
 
+@pytest.fixture(autouse=True)
+def temporary_database():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        database_path = os.path.join(temp_dir, "test.db")
+        os.environ["DATABASE_PATH"] = database_path
+
+        from app.database import initialize_database
+
+        initialize_database()
+
+        yield
+
+        os.environ.pop("DATABASE_PATH", None)
 
 @pytest.fixture
 def setup_service():

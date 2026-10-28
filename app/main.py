@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from app.api.event_routes import router as event_router
 from app.api.participant_routes import router as participant_router
 from app.api.registration_routes import router as registration_router
-
+from app.database import initialize_database
 
 app = FastAPI(
     title="Event Registration API",
@@ -12,6 +12,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
+initialize_database()
 
 @app.get("/")
 def home():

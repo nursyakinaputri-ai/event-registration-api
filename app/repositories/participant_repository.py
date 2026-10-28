@@ -1,20 +1,31 @@
-
+from app.database import get_connection
 from app.models.participant import Participant
 
 
 class ParticipantRepository:
-    def __init__(self):
-        self._participants: list[dict] = []
-        self._next_id = 1
-
     def create(self, participant: Participant) -> dict:
-        participant_data = participant.model_dump(mode="json")
-        participant_data["id"] = self._next_id
+        with get_connection() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO participants (name, email)
+                VALUES (?, ?)
+                """,
+                (participant.name, participant.email),
+            )
 
-        self._participants.append(participant_data)
-        self._next_id += 1
+            participant_id = cursor.lastrowid
 
-        return participant_data
+            row = connection.execute(
+                "SELECT * FROM participants WHERE id = ?",
+                (participant_id,),
+            ).fetchone()
+
+            return dict(row)
 
     def get_all(self) -> list[dict]:
-        return self._participants.copy()
+        with get_connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM participants ORDER BY id"
+            ).fetchall()
+
+            return [dict(row) for row in rows]

@@ -1,20 +1,30 @@
+from app.database import get_connection
+
 
 class RegistrationRepository:
-    def __init__(self):
-        self._registrations: list[dict] = []
-        self._next_id = 1
-
     def create(self, event_id: int, participant_id: int) -> dict:
-        registration = {
-            "id": self._next_id,
-            "event_id": event_id,
-            "participant_id": participant_id,
-        }
+        with get_connection() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO registrations (event_id, participant_id)
+                VALUES (?, ?)
+                """,
+                (event_id, participant_id),
+            )
 
-        self._registrations.append(registration)
-        self._next_id += 1
+            registration_id = cursor.lastrowid
 
-        return registration
+            row = connection.execute(
+                "SELECT * FROM registrations WHERE id = ?",
+                (registration_id,),
+            ).fetchone()
+
+            return dict(row)
 
     def get_all(self) -> list[dict]:
-        return self._registrations.copy()
+        with get_connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM registrations ORDER BY id"
+            ).fetchall()
+
+            return [dict(row) for row in rows]
